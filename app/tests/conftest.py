@@ -1,14 +1,12 @@
 # flake8: noqa: E402
 import os
+
+# -----------------------------
+# Must set DATABASE_URL before importing app modules
+# -----------------------------
+os.environ["DATABASE_URL"] = "sqlite:///:memory:"  # in-memory SQLite for tests
+
 import pytest
-
-# -----------------------------
-# Set DATABASE_URL for tests
-# Must be set BEFORE importing app modules
-# -----------------------------
-os.environ["DATABASE_URL"] = "sqlite:///:memory:"  
-
-# Now it is safe to import app modules
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from app.main import app, get_db
@@ -25,10 +23,10 @@ engine = create_engine(
 TestingSessionLocal = sessionmaker(
     autocommit=False,
     autoflush=False,
-    bind=engine,
+    bind=engine
 )
 
-# Create tables
+# Create all tables for tests
 Base.metadata.create_all(bind=engine)
 
 # -----------------------------
