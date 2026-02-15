@@ -4,7 +4,7 @@ import os
 # -----------------------------
 # Must set DATABASE_URL before importing app modules
 # -----------------------------
-os.environ["DATABASE_URL"] = "sqlite:///:memory:"  # in-memory SQLite for tests
+os.environ["DATABASE_URL"] = "sqlite:///./test_db.db"
 
 import pytest
 from sqlalchemy import create_engine
@@ -18,7 +18,7 @@ from app.models.job import JobModel
 # -----------------------------
 engine = create_engine(
     os.environ["DATABASE_URL"],
-    connect_args={"check_same_thread": False},  # required for SQLite in-memory
+    connect_args={"check_same_thread": False},
 )
 
 TestingSessionLocal = sessionmaker(
@@ -42,12 +42,10 @@ def override_get_db():
 
 app.dependency_overrides[get_db] = override_get_db
 
-# -----------------------------
-# Fixture: clear DB before each test
-# -----------------------------
-@pytest.fixture(autouse=True)
-def clear_db():
-    db = TestingSessionLocal()
-    db.query(JobModel).delete()
-    db.commit()
-    db.close()
+
+@pytest.fixture(scope="session", autouse=True)
+def cleanup(request):
+    def remove_test_db():
+        if os.path.exists("./test_db.db"):
+            os.remove("./test_db.db")
+    request.addfinalizer(remove_test_db)
