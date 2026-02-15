@@ -6,8 +6,6 @@ from prometheus_client import make_asgi_app
 from sqlalchemy.orm import Session
 from sqlalchemy import text
 from app.schemas import Job, JobStatus, JobUpdateStatus
-
-from app.schemas import Job, JobStatus
 from app.telemetry import metrics_middleware, setup_logging
 from app.models.database import SessionLocal, engine, Base
 from app.models.job import JobModel
@@ -37,6 +35,8 @@ app.mount("/metrics", metrics_app)
 async def track_metrics(request: Request, call_next):
     return await metrics_middleware(request, call_next)
 
+
+
 # DB dependency
 def get_db():
     db = SessionLocal()
@@ -54,6 +54,7 @@ def list_jobs(db: Session = Depends(get_db)):
     jobs = db.query(JobModel).all()
     return [Job.from_orm(job) for job in jobs]
 
+
 @app.post("/api/jobs", response_model=Job)
 def create_job(job: Job, db: Session = Depends(get_db)):
     db_job = JobModel(name=job.name, status=job.status)
@@ -61,6 +62,7 @@ def create_job(job: Job, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(db_job)
     return Job.from_orm(db_job)
+
 
 @app.patch("/api/jobs/{job_id}", response_model=Job)
 def update_job_status(job_id: UUID, job_update: JobUpdateStatus, db: Session = Depends(get_db)):
@@ -99,5 +101,5 @@ def readiness(db: Session = Depends(get_db)):
     try:
         db.execute(text("SELECT 1"))
         return {"status": "ready"}
-    except:
+    except Exception:
         raise HTTPException(status_code=503, detail="Database not ready")
