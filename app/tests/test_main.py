@@ -1,10 +1,4 @@
-
-import os
-# -----------------------------
-# Must set DATABASE_URL before importing app modules
-# -----------------------------
-# ephemeral in-memory DB for tests
-os.environ["DATABASE_URL"] = "sqlite:///:memory:" # noqa: E402
+# app/tests/test_main.py
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
@@ -21,7 +15,7 @@ SQLALCHEMY_DATABASE_URL = "sqlite:///:memory:"
 
 engine = create_engine(
     SQLALCHEMY_DATABASE_URL,
-    connect_args={"check_same_thread": False},  # required for SQLite in-memory
+    connect_args={"check_same_thread": False},
 )
 
 TestingSessionLocal = sessionmaker(
@@ -42,6 +36,7 @@ def override_get_db():
         yield db
     finally:
         db.close()
+
 
 app.dependency_overrides[get_db] = override_get_db
 
@@ -69,10 +64,12 @@ def test_health_liveness():
     assert response.status_code == 200
     assert response.json() == {"status": "alive"}
 
+
 def test_health_readiness():
     response = client.get("/health/ready")
     assert response.status_code == 200
     assert response.json() == {"status": "ready"}
+
 
 def test_create_job():
     payload = {"name": "Test Job", "status": "PENDING"}
@@ -84,33 +81,30 @@ def test_create_job():
     assert data["status"] == "PENDING"
     assert "id" in data
 
+
 def test_list_jobs():
-    # Create a job first
     client.post("/api/jobs", json={"name": "Job1", "status": "PENDING"})
     response = client.get("/api/jobs")
     assert response.status_code == 200
     assert len(response.json()) == 1
 
+
 def test_update_job_status():
-    # Create a job
     create_response = client.post("/api/jobs", json={"name": "Job1", "status": "PENDING"})
     job_id = create_response.json()["id"]
 
-    # Update status
     response = client.patch(f"/api/jobs/{job_id}", json={"status": "COMPLETED"})
     assert response.status_code == 200
     assert response.json()["status"] == "COMPLETED"
 
+
 def test_delete_job():
-    # Create a job
     create_response = client.post("/api/jobs", json={"name": "Job1", "status": "PENDING"})
     job_id = create_response.json()["id"]
 
-    # Delete job
     response = client.delete(f"/api/jobs/{job_id}")
     assert response.status_code == 200
     assert response.json()["message"] == "Job deleted successfully"
 
-    # Ensure DB is empty
     response = client.get("/api/jobs")
     assert len(response.json()) == 0
