@@ -1,7 +1,6 @@
 import logging
 import sys
-import json
-from prometheus_client import Counter, Histogram
+from prometheus_client import Counter
 
 # Metrics definitions
 REQUEST_COUNT = Counter(

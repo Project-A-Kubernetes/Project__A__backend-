@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from prometheus_client import make_asgi_app
 from sqlalchemy.orm import Session
 from sqlalchemy import text
-from app.schemas import Job, JobStatus, JobUpdateStatus
+from app.schemas import Job, JobUpdateStatus
 from app.telemetry import metrics_middleware, setup_logging
 from app.models.database import SessionLocal, engine, Base
 from app.models.job import JobModel
