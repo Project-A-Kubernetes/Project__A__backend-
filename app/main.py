@@ -13,7 +13,7 @@ from app.models.job import JobModel
 # Setup logging
 setup_logging()
 
-# Create DB tables (for quick start; use Alembic in production)
+#  we Create DB tables (for quick start, note: we use Alembic in production)
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="Job Management API")

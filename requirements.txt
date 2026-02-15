@@ -17,7 +17,7 @@ cryptography>=41.0.0
 flake8~=7.1.0
 # Security Scanning
 bandit~=1.8.0
-safety~=3.2.0
+safety>=3.3.0
 # Testing & Coverage
 pytest~=8.3.0
 pytest-cov~=6.0.0
