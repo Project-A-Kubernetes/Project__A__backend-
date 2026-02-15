@@ -40,6 +40,7 @@ jobs:
         run: safety check --json
       - name: run test 
         run: |
+          export PYTHONPATH=.
           pytest -v --disable-warnings  --cov=. --cov-report=term-missing
 
    #=============
