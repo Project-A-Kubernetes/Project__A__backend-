@@ -1,13 +1,11 @@
-# app/tests/test_main.py
 
 import os
-import pytest
-
 # -----------------------------
 # Must set DATABASE_URL before importing app modules
 # -----------------------------
-os.environ["DATABASE_URL"] = "sqlite:///:memory:"  # ephemeral in-memory DB for tests
-
+# ephemeral in-memory DB for tests
+os.environ["DATABASE_URL"] = "sqlite:///:memory:" # noqa: E402
+import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
