@@ -10,7 +10,8 @@ import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from app.main import app, get_db
-from app.models.database import Base, JobModel
+from app.models.database import Base
+from app.models.job import JobModel
 
 # -----------------------------
 # Test Database Setup (SQLite in-memory)
