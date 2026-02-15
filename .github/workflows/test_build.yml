@@ -37,7 +37,7 @@ jobs:
       - name: run scan 
         run: bandit -r . -ll -s B101,B102,B103,B104,B105
       - name: scan dependency 
-        run: safety check --full-report 
+        run: safety scan --full-report 
       - name: run test 
         run: |
           pytest app/* -v --disable-warnings  --cov=. --cov-report=term-missing
