@@ -1,21 +1,25 @@
+# app/tests/test_main.py
+
 import os
 import pytest
+
+# -----------------------------
+# Must set DATABASE_URL before importing app modules
+# -----------------------------
+os.environ["DATABASE_URL"] = "sqlite:///:memory:"  # ephemeral in-memory DB for tests
+
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+
 from app.main import app, get_db
 from app.models.database import Base
 from app.models.job import JobModel
 
 # -----------------------------
-# Ensure DATABASE_URL is set for Pydantic Settings
+# Test Database Setup (in-memory SQLite)
 # -----------------------------
-os.environ["DATABASE_URL"] = "sqlite:///:memory:"  # in-memory DB for tests
-
-# -----------------------------
-# Test Database (in-memory SQLite)
-# -----------------------------
-SQLALCHEMY_DATABASE_URL = "sqlite:///:memory:"  # ephemeral DB
+SQLALCHEMY_DATABASE_URL = "sqlite:///:memory:"
 
 engine = create_engine(
     SQLALCHEMY_DATABASE_URL,
@@ -28,11 +32,11 @@ TestingSessionLocal = sessionmaker(
     bind=engine,
 )
 
-# Recreate all tables before running tests
+# Recreate all tables in memory
 Base.metadata.create_all(bind=engine)
 
 # -----------------------------
-# Override DB dependency in FastAPI
+# Override FastAPI DB dependency
 # -----------------------------
 def override_get_db():
     db = TestingSessionLocal()
@@ -43,15 +47,16 @@ def override_get_db():
 
 app.dependency_overrides[get_db] = override_get_db
 
+# Create TestClient
 client = TestClient(app)
 
 # -----------------------------
-# Fixtures
+# Fixture to clear DB before each test
 # -----------------------------
 @pytest.fixture(autouse=True)
 def clear_db():
     """
-    Ensures DB is clean before each test.
+    Clears all jobs from DB before each test.
     """
     db = TestingSessionLocal()
     db.query(JobModel).delete()
@@ -82,14 +87,14 @@ def test_create_job():
     assert "id" in data
 
 def test_list_jobs():
-    # Create job first
+    # Create a job first
     client.post("/api/jobs", json={"name": "Job1", "status": "PENDING"})
     response = client.get("/api/jobs")
     assert response.status_code == 200
     assert len(response.json()) == 1
 
 def test_update_job_status():
-    # Create job
+    # Create a job
     create_response = client.post("/api/jobs", json={"name": "Job1", "status": "PENDING"})
     job_id = create_response.json()["id"]
 
@@ -99,7 +104,7 @@ def test_update_job_status():
     assert response.json()["status"] == "COMPLETED"
 
 def test_delete_job():
-    # Create job
+    # Create a job
     create_response = client.post("/api/jobs", json={"name": "Job1", "status": "PENDING"})
     job_id = create_response.json()["id"]
 
