@@ -1,0 +1,42 @@
+name: test_build
+on:
+  push: 
+    branches: 
+      - main 
+  workflow_dispatch:
+    
+permissions: 
+  contents: read 
+concurrency:
+  group: backend 
+  cancel-in-progress: false 
+jobs:
+  test: 
+    runs-on: ubuntu-latest 
+    timeout-minutes: 3 
+    steps:
+      - name: checkout repo 
+        uses: actions/checkout@v4
+        with:
+         fetch-depth: 0
+         cache: '.repo'
+      - name: setup python 
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.13'
+          cache: 'pip'
+      - name: install dependency 
+        run: | 
+          pip install --upgrade pip
+          pip install -r requirements.txt 
+      - name: run lint 
+        run: flake8 . --max-line-length=120 --statistics 
+      - name: run scan 
+        run: bandit -r . -ll -s B101,B102,B103,B104,B105
+      - name: scan dependency 
+        run: safety check --full-report 
+      - name: run test 
+        run: |
+          pytest app/* -v --disable-warnings  --cov=. --cov-report=term-missing
+
+  

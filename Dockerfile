@@ -5,34 +5,42 @@ FROM python:3.11-slim as builder
 WORKDIR /app
 
 # Prevent Python from writing .pyc files and enable unbuffered logging
-ENV PYTHONDONTWRITEBYTECODE 1
-ENV PYTHONUNBUFFERED 1
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
 
 # Install build dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Install dependencies into a temporary location
+# Copy requirements and install dependencies into a temporary location
 COPY requirements.txt .
 RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
 
-# Stage 2: Final Runtime stage
+# Stage 2: Runtime stage
 FROM python:3.11-slim
 
 WORKDIR /app
 
-# Copy only the installed packages from the builder
+# Copy installed packages from builder
 COPY --from=builder /install /usr/local
-RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
-# Copy the application code
-COPY . ./app
 
-# Create a non-privileged user for security (K8s best practice)
+# Install runtime dependencies
+RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
+
+# Copy application code
+COPY ./app ./app
+# Copy wait-for-db script
+#COPY wait-for-db.sh ./wait-for-db.sh
+#RUN chmod +x ./wait-for-db.sh
+
+# Create non-privileged user and assign ownership
 RUN adduser --disabled-password --gecos "" appuser && chown -R appuser /app
 USER appuser
 
-# Expose the port defined in your requirements
+# Expose FastAPI port
 EXPOSE 8000
 
+# Command to run FastAPI
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
