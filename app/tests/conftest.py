@@ -1,3 +1,4 @@
+# flake8: noqa: E402
 import os
 import pytest
 
@@ -5,7 +6,7 @@ import pytest
 # Set DATABASE_URL for tests
 # Must be set BEFORE importing app modules
 # -----------------------------
-os.environ["DATABASE_URL"] = "sqlite:///:memory:"  # noqa: F401
+os.environ["DATABASE_URL"] = "sqlite:///:memory:"  
 
 # Now it is safe to import app modules
 from sqlalchemy import create_engine
