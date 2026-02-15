@@ -36,10 +36,10 @@ jobs:
         run: docker load -i  backend_image.tar  
       - name: run integration test # we are sending an http request to our container to see if it returns status code 200 before container hit my cluster(all this process is automated)
         run: |
-          docker run -d --name integration_check_app -p 80:80 ${{steps.image_tags.outputs.tag}}
+          docker run -d --name integration_check_app -p 8000:8000 ${{steps.image_tags.outputs.tag}}
           retries=5 
           intervals=3
-          health_url=http://localhost:80/healthz
+          health_url=http://localhost:8000/health
           count=0
           until [ $count -ge $retries ]; do
             image_health=$(curl -s -o /dev/null -w "%{http_code}" "$health_url" || true)
