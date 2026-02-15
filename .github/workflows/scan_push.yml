@@ -34,12 +34,12 @@ jobs:
 
       - name: load the image for docker 
         run: docker load -i  backend_image.tar  
-      - name: run integration test # we are sending an http request to our container to see if it returns status code 200 before container hit my cluster(all this process is automated)
+      - name: run integration test # we are sending an http request to our container to see if it returns status code 200 before container hit my cluster(all this process is automated) and this process is just testing..
         run: |
-          docker run -d --name integration_check_app -p 8000:8000 ${{steps.image_tags.outputs.tag}}
+          docker run -d --name integration_check_app -e DATABASE_URL="sqlite:///./test.db" -p 8000:8000 ${{steps.image_tags.outputs.tag}} #we added DATABASE_URL="sqlite:///./test.db" to this line for integration test, we are not using sqlite in prod we use RDS mysql engine...
           retries=5 
           intervals=3
-          health_url=http://localhost:8000/health/live #path to check the container health 
+          health_url=http://localhost:8000/health/live
           count=0
           until [ $count -ge $retries ]; do
             image_health=$(curl -s -o /dev/null -w "%{http_code}" "$health_url" || true)
