@@ -1,30 +1,127 @@
 name: scan_push 
-on:
-  workflow_run: 
+on: 
+  workflow_run:
     workflows: ["test_build"]
-    types:  ["completed"]
+    types: ["completed"]
     branches: ["main"]
-  workflow_dispatch:  
+  workflow_dispatch:
+    
 permissions:
   contents: read 
-  id-token: read 
-concurrency:
-  group: backend 
+  id-token: write 
+concurrency: 
   cancel-in-progress: true 
+  group: ${{github.ref}}
 jobs:
-  integration_scan: 
-    runs-on: ubuntu-latest 
+  integration_test:
+    runs-on: ubuntu-latest
     timeout-minutes: 3 
+    if: ${{github.event.workflow_run.conclusion == 'success'}}
     steps:
-      - name: checkout repo 
-        uses: actions/checkout@v4 
-        with: 
-          fetch-depth: 1 
-      - name: login to aws 
-        uses: aws-action/configure-aws-credentials@v4 
+      - name: aws login 
+        uses: aws-actions/configure-aws-credentials@v6
         with: 
           role-to-assume: ${{secrets.AWS_ROLE}}
-          aws-region: ${{secrets.AWS_REGION}} 
-      - name: download artifact 
-        run: aws s3 cp ...... . 
-      - name:
+          aws-region: ${{secrets.AWS_REGION}}
+      - name: download the artifact 
+        run: aws s3 cp s3://project-a-kubernetes-s3-bucket/image.tar .
+      - name: download image metadata 
+        id: image_tags
+        run: |
+          aws s3 cp s3://project-a-kubernetes-s3-bucket/image_tag.txt  .  
+          tags=$(cat "image_tag.txt" | grep "sha-" | head -n 1)
+          echo "tag=$tags" >> "$GITHUB_OUTPUT"
+
+      - name: load the image for docker 
+        run: docker load -i image.tar  
+      - name: run integration test # we are sending an http request to our container to see if it returns status code 200 before container hit my cluster(all this process is automated)
+        run: |
+          docker run -d --name integration_check_app -p 80:80 ${{steps.image_tags.outputs.tag}}
+          retries=5 
+          intervals=3
+          health_url=http://localhost:80/healthz
+          count=0
+          until [ $count -ge $retries ]; do
+            image_health=$(curl -s -o /dev/null -w "%{http_code}" "$health_url" || true)
+            if [ "$image_health" == "200" ]; then
+            echo "Integration Test Passed! at $count attempt with status_code $image_health" 
+            docker ps 
+            docker stop integration_check_app
+            docker rm -f integration_check_app 
+            exit 0
+            fi 
+            count=$((count +1 ))
+            echo "The number of attempt is $count/$retries"
+            sleep "$intervals"
+          done 
+          echo "Integration test failed"
+          docker stop integration_check_app 
+          docker rm -f integration_check_app 
+          exit 1 
+    #============
+    #Trivy security scan
+    #==============
+  trivy_scan: 
+    runs-on: ubuntu-latest
+    needs: integration_test 
+    timeout-minutes: 2 
+    steps:
+      - name: aws login 
+        uses: aws-actions/configure-aws-credentials@v6 
+        with: 
+          role-to-assume: ${{secrets.AWS_ROLE}}
+          aws-region: ${{secrets.AWS_REGION}}
+      - name: download image  
+        run: aws s3 cp s3://project-a-kubernetes-s3-bucket/image.tar . 
+      - name: download image metadata 
+        id: tag
+        run: |
+          aws s3 cp s3://project-a-kubernetes-s3-bucket/image_tag.txt  .  
+          tags=$(cat "image_tag.txt" | grep "sha-")
+          echo "mytag=$tags" >> "$GITHUB_OUTPUT"
+      - name: load image to runner 
+        run: docker load -i image.tar 
+      - name: run Trivy scan # using trivy to scan artifact for vulnerabilities.. this is import for safe deployment of healthy containers
+        id: trivy
+        uses: aquasecurity/trivy-action@0.33.0 
+        with:
+          format: 'table'
+          severity: 'CRITICAL,HIGH'
+          exit-code: '0'
+          ignore-unfixed: 'true'
+          vuln-type: 'os,library'
+          image-ref: ${{ steps.tag.outputs.mytag }}
+      - name: check
+        if:  steps.trivy.outcome == 'success'
+        run: echo "Passed Trivy security check!"
+    #==================
+    #Push to aws ecr 
+    #=============
+  push:
+    runs-on: ubuntu-latest
+    needs: trivy_scan
+    timeout-minutes: 2 
+    steps: # pushing the already builts and tested image to aws ECR
+      - name: aws login 
+        uses: aws-actions/configure-aws-credentials@v6 
+        with: 
+          role-to-assume: ${{secrets.AWS_ROLE}}
+          aws-region: ${{secrets.AWS_REGION}}
+      - name: download image  
+        run: aws s3 cp s3://project-a-kubernetes-s3-bucket/image.tar . 
+      - name: load image to runner 
+        run: docker load -i image.tar 
+      - name: download image metadata 
+        id: the_tag
+        run: |
+          aws s3 cp s3://project-a-kubernetes-s3-bucket/image_tag.txt  .  
+          tags=$(cat "image_tag.txt" | grep "sha-")
+          echo "my_tag=$tags" >> "$GITHUB_OUTPUT"
+      - name: login to ecr 
+        uses: aws-actions/amazon-ecr-login@v2 
+      - name: push 
+        run: | 
+          echo "${{steps.the_tag.outputs.my_tag}}"
+          docker tag ${{steps.the_tag.outputs.my_tag}} ${{vars.ECR_REG}}/${{vars.ECR_REPO}}:latest
+          docker push ${{vars.ECR_REG}}/${{vars.ECR_REPO}}:latest
+          docker push  ${{steps.the_tag.outputs.my_tag}}
