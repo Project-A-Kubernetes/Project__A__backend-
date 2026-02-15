@@ -42,6 +42,12 @@ def override_get_db():
 
 app.dependency_overrides[get_db] = override_get_db
 
+@pytest.fixture(autouse=True)
+def clear_db():
+    # Drop and recreate tables to ensure a clean slate for every test
+    Base.metadata.drop_all(bind=engine)
+    Base.metadata.create_all(bind=engine)
+    yield
 
 @pytest.fixture(scope="session", autouse=True)
 def cleanup(request):
