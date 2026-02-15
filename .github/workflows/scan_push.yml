@@ -11,7 +11,7 @@ permissions:
   id-token: write 
 concurrency: 
   cancel-in-progress: true 
-  group: ${{github.ref}}
+  group: backend
 jobs:
   integration_test:
     runs-on: ubuntu-latest

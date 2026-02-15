@@ -40,7 +40,7 @@ jobs:
         run: safety check --json
       - name: run test 
         run: |
-          pytest app/* -v --disable-warnings  --cov=. --cov-report=term-missing
+          pytest -v --disable-warnings  --cov=. --cov-report=term-missing
 
    #=============
   #build image 
