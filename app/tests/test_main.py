@@ -3,15 +3,14 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+from app.main import app, get_db
+from app.models.database import Base
+from app.models.job import JobModel
 
 # -----------------------------
 # Ensure DATABASE_URL is set for Pydantic Settings
 # -----------------------------
 os.environ["DATABASE_URL"] = "sqlite:///:memory:"  # in-memory DB for tests
-
-from app.main import app, get_db
-from app.models.database import Base
-from app.models.job import JobModel
 
 # -----------------------------
 # Test Database (in-memory SQLite)
