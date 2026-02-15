@@ -24,16 +24,16 @@ jobs:
           role-to-assume: ${{secrets.AWS_ROLE}}
           aws-region: ${{secrets.AWS_REGION}}
       - name: download the artifact 
-        run: aws s3 cp s3://project-a-kubernetes-s3-bucket/image.tar .
+        run: aws s3 cp s3://project-a-kubernetes-s3-bucket/backend_image.tar .
       - name: download image metadata 
         id: image_tags
         run: |
-          aws s3 cp s3://project-a-kubernetes-s3-bucket/image_tag.txt  .  
-          tags=$(cat "image_tag.txt" | grep "sha-" | head -n 1)
+          aws s3 cp s3://project-a-kubernetes-s3-bucket/backend_image_tag.txt  .  
+          tags=$(cat "backend_image_tag.txt" | grep "sha-" | head -n 1)
           echo "tag=$tags" >> "$GITHUB_OUTPUT"
 
       - name: load the image for docker 
-        run: docker load -i image.tar  
+        run: docker load -i  backend_image.tar  
       - name: run integration test # we are sending an http request to our container to see if it returns status code 200 before container hit my cluster(all this process is automated)
         run: |
           docker run -d --name integration_check_app -p 80:80 ${{steps.image_tags.outputs.tag}}
@@ -72,15 +72,15 @@ jobs:
           role-to-assume: ${{secrets.AWS_ROLE}}
           aws-region: ${{secrets.AWS_REGION}}
       - name: download image  
-        run: aws s3 cp s3://project-a-kubernetes-s3-bucket/image.tar . 
+        run: aws s3 cp s3://project-a-kubernetes-s3-bucket/backend_image.tar . 
       - name: download image metadata 
         id: tag
         run: |
-          aws s3 cp s3://project-a-kubernetes-s3-bucket/image_tag.txt  .  
-          tags=$(cat "image_tag.txt" | grep "sha-")
+          aws s3 cp s3://project-a-kubernetes-s3-bucket/backend_image_tag.txt  .  
+          tags=$(cat "backend_image_tag.txt" | grep "sha-")
           echo "mytag=$tags" >> "$GITHUB_OUTPUT"
       - name: load image to runner 
-        run: docker load -i image.tar 
+        run: docker load -i backend_image.tar 
       - name: run Trivy scan # using trivy to scan artifact for vulnerabilities.. this is import for safe deployment of healthy containers
         id: trivy
         uses: aquasecurity/trivy-action@0.33.0 
@@ -108,20 +108,20 @@ jobs:
           role-to-assume: ${{secrets.AWS_ROLE}}
           aws-region: ${{secrets.AWS_REGION}}
       - name: download image  
-        run: aws s3 cp s3://project-a-kubernetes-s3-bucket/image.tar . 
+        run: aws s3 cp s3://project-a-kubernetes-s3-bucket/backend_image.tar . 
       - name: load image to runner 
-        run: docker load -i image.tar 
+        run: docker load -i backend_image.tar 
       - name: download image metadata 
         id: the_tag
         run: |
-          aws s3 cp s3://project-a-kubernetes-s3-bucket/image_tag.txt  .  
-          tags=$(cat "image_tag.txt" | grep "sha-")
+          aws s3 cp s3://project-a-kubernetes-s3-bucket/backend_image_tag.txt  .  
+          tags=$(cat "backend_image_tag.txt" | grep "sha-")
           echo "my_tag=$tags" >> "$GITHUB_OUTPUT"
       - name: login to ecr 
         uses: aws-actions/amazon-ecr-login@v2 
       - name: push 
         run: | 
           echo "${{steps.the_tag.outputs.my_tag}}"
-          docker tag ${{steps.the_tag.outputs.my_tag}} ${{vars.ECR_REG}}/${{vars.ECR_REPO}}:latest
-          docker push ${{vars.ECR_REG}}/${{vars.ECR_REPO}}:latest
+          docker tag ${{steps.the_tag.outputs.my_tag}} ${{vars.ECR_REG}}/${{vars.ECR_REPO_BACKEND}}:latest
+          docker push ${{vars.ECR_REG}}/${{vars.ECR_REPO_BACKEND}}:latest
           docker push  ${{steps.the_tag.outputs.my_tag}}

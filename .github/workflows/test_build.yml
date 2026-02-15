@@ -7,6 +7,7 @@ on:
     
 permissions: 
   contents: read 
+  id-token: write
 concurrency:
   group: backend 
   cancel-in-progress: false 
@@ -70,7 +71,7 @@ jobs:
         id: img_tag 
         uses: docker/metadata-action@v5
         with: 
-          images: ${{vars.ECR_REG}}/${{vars.ECR_REPO}} 
+          images: ${{vars.ECR_REG}}/${{vars.ECR_REPO_BACKEND}} 
           tags: |
             type=sha,prefix=sha-
             type=raw,value=latest 
