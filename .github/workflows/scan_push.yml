@@ -24,11 +24,11 @@ jobs:
           role-to-assume: ${{secrets.AWS_ROLE}}
           aws-region: ${{secrets.AWS_REGION}}
       - name: download the artifact 
-        run: aws s3 cp s3://project-a-kubernetes-s3-bucket/backend_image.tar .
+        run: aws s3 cp s3://project-a-kubernetes-s3-bucket1/backend_image.tar .
       - name: download image metadata 
         id: image_tags
         run: |
-          aws s3 cp s3://project-a-kubernetes-s3-bucket/backend_image_tag.txt  .  
+          aws s3 cp s3://project-a-kubernetes-s3-bucket1/backend_image_tag.txt  .  
           tags=$(cat "backend_image_tag.txt" | grep "sha-" | head -n 1)
           echo "tag=$tags" >> "$GITHUB_OUTPUT"
 
@@ -72,18 +72,18 @@ jobs:
           role-to-assume: ${{secrets.AWS_ROLE}}
           aws-region: ${{secrets.AWS_REGION}}
       - name: download image  
-        run: aws s3 cp s3://project-a-kubernetes-s3-bucket/backend_image.tar . 
+        run: aws s3 cp s3://project-a-kubernetes-s3-bucket1/backend_image.tar . 
       - name: download image metadata 
         id: tag
         run: |
-          aws s3 cp s3://project-a-kubernetes-s3-bucket/backend_image_tag.txt  .  
+          aws s3 cp s3://project-a-kubernetes-s3-bucket1/backend_image_tag.txt  .  
           tags=$(cat "backend_image_tag.txt" | grep "sha-")
           echo "mytag=$tags" >> "$GITHUB_OUTPUT"
       - name: load image to runner 
         run: docker load -i backend_image.tar 
       - name: run Trivy scan # using trivy to scan artifact for vulnerabilities.. this is import for safe deployment of healthy containers
         id: trivy
-        uses: aquasecurity/trivy-action@0.33.0 
+        uses: aquasecurity/trivy-action@0.35.0 
         with:
           format: 'table'
           severity: 'CRITICAL,HIGH'
@@ -108,13 +108,13 @@ jobs:
           role-to-assume: ${{secrets.AWS_ROLE}}
           aws-region: ${{secrets.AWS_REGION}}
       - name: download image  
-        run: aws s3 cp s3://project-a-kubernetes-s3-bucket/backend_image.tar . 
+        run: aws s3 cp s3://project-a-kubernetes-s3-bucket1/backend_image.tar . 
       - name: load image to runner 
         run: docker load -i backend_image.tar 
       - name: download image metadata 
         id: the_tag
         run: |
-          aws s3 cp s3://project-a-kubernetes-s3-bucket/backend_image_tag.txt  .  
+          aws s3 cp s3://project-a-kubernetes-s3-bucket1/backend_image_tag.txt  .  
           tags=$(cat "backend_image_tag.txt" | grep "sha-")
           echo "my_tag=$tags" >> "$GITHUB_OUTPUT"
       - name: login to ecr 

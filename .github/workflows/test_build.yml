@@ -110,6 +110,6 @@ jobs:
           role-to-assume:  ${{secrets.AWS_ROLE}} #use role oidc much more safer and configure role in organization secrets
           aws-region: ${{secrets.AWS_REGION}} #save region in secret
       - name: send artifact to s3 bucket
-        run: aws s3 cp backend_image.tar s3://project-a-kubernetes-s3-bucket 
+        run: aws s3 cp backend_image.tar s3://project-a-kubernetes-s3-bucket1
       - name: send artifact metadata to s3 bucket
-        run: aws s3 cp backend_image_tag.txt s3://project-a-kubernetes-s3-bucket 
+        run: aws s3 cp backend_image_tag.txt s3://project-a-kubernetes-s3-bucket1 
