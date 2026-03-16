@@ -6,7 +6,7 @@ class Settings(BaseSettings):
     ENVIRONMENT: str = "production"
     LOG_LEVEL: str = "info"
 
-    DATABASE_URL: str  # REQUIRED — no default
+    DATABASE_URL: str  # REQUIRED 
 
     model_config = SettingsConfigDict(
         env_file=".env",

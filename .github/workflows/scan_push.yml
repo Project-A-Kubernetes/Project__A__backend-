@@ -127,3 +127,53 @@ jobs:
           docker tag ${{steps.the_tag.outputs.my_tag}} ${{vars.ECR_REG}}/${{vars.ECR_REPO_BACKEND}}:latest
           docker push ${{vars.ECR_REG}}/${{vars.ECR_REPO_BACKEND}}:latest
           docker push  ${{steps.the_tag.outputs.my_tag}}
+  #=====================
+  #update helm chart Repository 
+ #======================
+  update_helm:
+    runs-on: ubuntu-latest
+    needs: push
+    environment:
+      name: production
+    steps:
+      - name: aws login 
+        uses: aws-actions/configure-aws-credentials@v6 
+        with: 
+          role-to-assume: ${{secrets.AWS_ROLE}}
+          aws-region: ${{secrets.AWS_REGION}}
+      #we will authenticate using github app as its the best security practice with short live access
+      - name: Authenticate GitHub App
+        id: ghauth
+        uses: actions/create-github-app-token@v3
+        with:
+          app-id: ${{ secrets.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          owner: Project-A-Kubernetes
+          repositories: -Project_A_helm_chart_backend
+      - name: download image metadata 
+        id: the_tag
+        run: |
+          aws s3 cp s3://project-a-kubernetes-s3-bucket1/backend_image_tag.txt  .  
+          tags=$(grep "sha-" backend_image_tag.txt | tail -n1 | cut -d':' -f2)
+          echo "my_tag=$tags" >> "$GITHUB_OUTPUT"
+      - name: Clone Helm repo
+        run: git clone https://x-access-token:${{ steps.ghauth.outputs.token }}@github.com/Project-A-Kubernetes/-Project_A_helm_chart_backend.git
+
+      - name: Install yq
+        run: |
+          sudo wget https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 -O /usr/local/bin/yq
+          sudo chmod +x /usr/local/bin/yq
+
+      - name: Update image tag
+        run: yq -i ".image.tag = \"${{ steps.the_tag.outputs.my_tag }}\"" values.yaml
+        working-directory: -Project_A_helm_chart_backend
+      #commit and push the update value.yaml let argocd sync it
+      - name: Commit & push
+        run: |
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+          git add values.yaml
+          git commit -m "New release: update image tag to ${{ steps.the_tag.outputs.my_tag }}" || echo "No changes"
+          git remote set-url origin https://x-access-token:${{ steps.ghauth.outputs.token }}@github.com/Project-A-Kubernetes/-Project_A_helm_chart_backend.git
+          git push origin main
+        working-directory: -Project_A_helm_chart_backend
