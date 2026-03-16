@@ -2,8 +2,8 @@
 
 ## Project Overview
 
-This is a backend service providing </functionality> to my frontend. This system help track jobs, add jobs, delete jobs, change job statue and jobs states and data are store in RDS mysql database.
-The service is fully containerized with Docker, automated through a CI/CD pipeline, and is designed for deployment on Kubernetes, ensuring scalability, availability, and maintainability, This system is built with security as a top priority.
+This is a backend service providing functionality to my frontend. This system help track jobs, add jobs, delete jobs, change job status and jobs states and data are store in RDS mysql database.
+The service is fully containerized with Docker, automated through a CI/CD pipeline, and is designed for deployment on Kubernetes, ensuring scalability, availability, and maintainability. This system is built with security as a top priority.
 
 ## Architecture
 
@@ -29,9 +29,9 @@ The service is fully containerized with Docker, automated through a CI/CD pipeli
 
 ## CI/CD Pipeline
 
-The CI/CD pipeline ensures secure automated testing ,code quality check, sonar-qube scaning,  container building, integration test, push and deployment with Gitops.
+The CI/CD pipeline ensures secure automated testing, code quality check, sonar-qube scaning,  container building, integration test, push and deployment with Gitops.
 
-Pipeline Steps:
+### Pipeline Steps:
 
 - Checkout code from Git repository
 - Run linting and unit tests 
@@ -40,7 +40,7 @@ Pipeline Steps:
 - Build Docker image
 - integration scan  
 - trivy image security scan
-- Push Docker image to registry (On approval, push to ECR)
+- Push Docker image to private registry (On approval, push to ECR)
 - update Backend Helm Chart 
 - On approval, deploy to environment
 - Deploy to staging or prod cluster using Gitop practice (argocd)
